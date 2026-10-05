@@ -1,0 +1,11 @@
+product_id,customer_id,name,segment,order_id,city,price,product_name,category
+P1,101,Alice,Premium,1,New York,200,Laptop,Electronics
+P2,102,Bob,Regular,2,Chicago,300,Phone,Electronics
+P3,101,Alice,Premium,3,New York,150,Tablet,Electronics
+P2,103,Charlie,Regular,4,Dallas,400,Phone,Electronics
+P4,104,David,Premium,5,Chicago,250,Headphones,Accessories
+P1,105,Eva,Regular,6,New York,350,Laptop,Electronics
+P2,101,Alice,Premium,7,Dallas,500,Phone,Electronics
+P3,102,Bob,Regular,8,Chicago,100,Tablet,Electronics
+P4,103,Charlie,Regular,9,New York,600,Headphones,Accessories
+P1,105,Eva,Regular,10,Chicago,450,Laptop,Electronics
