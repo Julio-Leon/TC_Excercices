@@ -1,0 +1,37 @@
+1. What is Structured Streaming, and how does it differ from traditional Spark batch processing?
+
+    - Structured Streaming is Spark's engine for processing continuously arriving data using the DataFrame and Dataset APIs.
+
+2. What is a Trigger in Structured Streaming? Name the four types.
+    - A trigger determines when Spark executes a streaming query to process available data.
+    
+    The four commonly taught trigger types are:
+    
+        1. Default trigger: Processes available data in successive micro-batches as quickly as possible.
+        2. Processing-time trigger: Executes micro-batches according to a specified time interval.
+        3. Once trigger: Processes available data in one micro-batch and then stops. This trigger is deprecated in newer Spark versions in favor of AvailableNow for many use cases.
+        4. Continuous trigger: Uses Spark's continuous processing mode, which has lower latency but more limited functionality and at-least-once rather than exactly-once processing guarantees.
+
+3. Explain the difference between Append, Update, and Complete output modes.
+
+    - Output mode determines which results Spark writes to the sink after each trigger.
+
+        - Append: Writes a city total only when Spark considers that result final, such as after a watermark closes the relevant window.
+        - Update: Writes a city total again whenever that total changes.
+        - Complete: Writes every city and its current total after each trigger.
+
+4. What is the role of checkpointing in Structured Streaming?
+
+    - Checkpointing allows Spark to recover a streaming query after failure.
+
+5. Name three common input sources supported by Spark Structured Streaming.
+
+    - Three common sources are:
+        1. Kafka — continuously arriving messages from event producers.
+        2. Files — new files appearing in a directory, such as JSON, CSV, or Parquet files.
+        3. Socket — text data arriving over a network socket, commonly used for demonstrations and testing.
+
+6. In a Spark streaming job, when does actual computation occur?
+
+    - Spark uses lazy evaluation. Defining transformations does not immediately execute them.
+
