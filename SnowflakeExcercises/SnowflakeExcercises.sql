@@ -18,7 +18,7 @@
     -- It uses the Varient data type so that it can handle these semi-structured data types, for example JSON, it allows us to actually retriee the data just like we could in other systems, but with a special syntax.
 
 -- 5. Compare Snowpipe with the COPY INTO command.
-    -- Snow pipe is for real-time pipelines
+    -- Snow pipe is for near real-time pipelines
     -- COPY INTO is used for batch pipelines, where huge data transfer is the norm.
 
 CREATE WAREHOUSE retail_wh
@@ -65,7 +65,7 @@ SELECT * FROM products WHERE price > 10;
     -- 
 
 -- 4. How do Streams help implement Change Data Capture (CDC)?
-    -- 
+    -- Streams allow us to keep track of the the changes on a table since the last time it was consumed. When a table gets consumed by a task, these changes go away and we restart the process.
 
 -- 5. Explain how Snowflake achieves separation of compute and storage.
     -- Snowflake achieves the separation by keeping these 2 features in different layers. There is a storage layer and a different computing layer. These can be scaled separately, also, if 1 fails, we have access to the other one.
@@ -103,7 +103,98 @@ COPY INTO customers_json FROM @my_stage/customers.json
     FILE_FORMAT = (TYPE = 'JSON' STRIP_OUTER_ARRAY = TRUE);
 
 SELECT 
-    customer:first_name::STRING || ' ' || customer:last_name::STRING AS customer_name
+    customer:first_name::STRING || ' ' || customer:last_name AS customer_name 
 FROM 
     customers_json;
 
+CREATE OR REPLACE STREAM
+    products_stream
+ON TABLE
+    products;
+
+INSERT INTO 
+    products 
+VALUES
+    (15, 'something finally', 0.89);
+
+SELECT * FROM products_stream;
+
+CREATE OR REPLACE TABLE products_end (
+    product_id INT,
+    product_name VARCHAR(20),
+    price DOUBLE
+)
+
+CREATE OR REPLACE TASK merge_products_to_end
+    WAREHOUSE = retail_wh
+    SCHEDULE = '1 MINUTE'
+AS
+    MERGE INTO products_end tgt
+        USING(
+            SELECT
+                *,
+                METADATA$ACTION AS action,
+                METADATA$ISUPDATE AS is_update
+            FROM
+                products_stream
+            WHERE
+                (METADATA$ACTION = 'INSERT' AND  NOT METADATA$ISUPDATE)
+        ) src
+        ON 
+            tgt.product_id = src.product_id
+        WHEN NOT MATCHED THEN
+            INSERT (product_id, product_name, price)
+            VALUES (src.product_id, src.product_name, src.price);
+
+ALTER TASK merge_products_to_end RESUME;
+ALTER TASK merge_products_to_end SUSPEND;
+
+
+SELECT * FROM products_stream;
+SELECT * FROM products_end;
+
+SHOW TASKS LIKE 'MERGE_PRODUCTS_TO_END';
+
+--Advanced Level
+
+-- Conceptual Questions
+-- 1. When would you use Snowpipe Streaming instead of classic Snowpipe?
+    --Both ingest data into Snowflake, but the main difference is how the data arrives and how quickly you need it available.
+
+-- 2. How do Secure Views and Row Access Policies secure shared data?
+    -- These features let you control what consumers can see without necessarily giving them access to the underlying data.
+    -- A Secure View hides the underlying query definition from users who consume the view and can help protect sensitive implementation details.
+    -- A Row Access Policy controls which rows a user can see, based on their role or other conditions.
+
+-- 3. What are best practices for designing role hierarchies in Snowflake?
+    -- Snowflake uses role-based access control (RBAC). A good hierarchy makes permissions easier to manage and audit.
+
+-- 4. How does LATERAL FLATTEN work with semi-structured data?
+    --Snowflake stores semi-structured data in types such as VARIANT, which can contain JSON objects and arrays.
+    -- FLATTEN converts elements of an array or object into individual rows. 
+    -- LATERAL allows the function to reference a column from the preceding table row.
+
+-- 5. Explain Snowflake billing: compute vs. storage
+    -- Snowflake's costs primarily come from compute, storage, and additional services such as data transfer or serverless features.
+
+
+-- Hands-On Excercise
+
+UNDROP a_table;
+
+CREATE OR REPLACE MASKING POLICY email_mask
+AS (email VARCHAR)
+RETURNS VARCHAR ->
+    CASE
+        WHEN CURRENT_ROLE() = 'HR_ROLE'
+            THEN email
+        ELSE '********'
+    END;
+
+
+
+CREATE OR REPLACE ROW ACCESS POLICY region_access_policy
+AS (region VARCHAR)
+RETURNS BOOLEAN ->
+    CURRENT_ROLE() = 'ADMIN_ROLE'
+    OR region = CURRENT_ROLE();
