@@ -1,0 +1,17 @@
+{% snapshot customer_snapshot %}
+
+{{
+    config(
+        schema = 'snapshots',
+        unique_key    = 'customer_id',
+        strategy      = 'timestamp',
+        updated_at    = 'updated_at'
+    )
+}}
+
+SELECT 
+    * 
+FROM 
+    {{ source('public', 'customers') }}
+
+{% endsnapshot %}

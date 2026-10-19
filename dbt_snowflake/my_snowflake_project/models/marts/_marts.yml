@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: >
+      Fact table for customer orders. One row per order.
+      Joins staging orders with customer dimension.
+      Primary grain: order_id.
+    columns:
+
+      - name: order_id
+        description: 'Primary key. Unique identifier for each order.'
+        tests:
+          - not_null
+          - unique
+
+      - name: order_date
+        description: 'Date the order was placed (UTC). Source: raw.orders.order_date'
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: 'Total order value in USD including tax.'
+        tests:
+          - not_null
+
+      - name: customer_name
+        description: 'Full name of the ordering customer. Joined from stg_customers.'
+
+      - name: order_tier
+        description: >
+          Revenue tier classification: High Value (>= 10000),
+          Mid Value (1000-9999), Low Value (< 1000)
+        tests:
+          - accepted_values:
+              values: ['High Value', 'Mid Value', 'Low Value']
